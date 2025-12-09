@@ -73,7 +73,7 @@ if ($query !== '') {
         h1 {
             font-size: 24px;
             margin-bottom: 25px;
-            /* Color removed to remain neutral/default */
+            color: #1f2937;
         }
 
         h2 { 
@@ -106,7 +106,7 @@ if ($query !== '') {
             transition: border-color 0.2s;
         }
         .search-input:focus {
-            border-color: #999; /* Neutral grey focus */
+            border-color: #d946ef; /* Matches the "Electric" theme */
         }
         .search-button {
             padding: 12px 25px;

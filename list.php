@@ -39,95 +39,193 @@ usort($notes, function($a, $b) {
 
 $total_notes = count($notes);
 ?><!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="utf-8">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>All Notes</title>
     <link rel="shortcut icon" href="<?php print $base_url; ?>/favicon.ico">
     <link rel="stylesheet" href="<?php print $base_url; ?>/styles.css">
     <style>
-        .list-container {
-            max-width: 900px;
-            margin: 20px auto;
-            padding: 20px;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        * {
+            box-sizing: border-box;
         }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: #f5f5f5;
+        }
+
+        .list-container {
+            max-width: 1100px;
+            margin: 30px auto;
+            padding: 30px;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 15px;
         }
+
         .header h1 {
             margin: 0;
+            font-size: 26px;
+            font-weight: 600;
+            color: #1a1a1a;
         }
+
         .header-links a {
-            margin-left: 15px;
-            color: #007bff;
+            margin-left: 20px;
+            color: #0066cc;
             text-decoration: none;
+            font-size: 15px;
+            font-weight: 500;
         }
+
         .header-links a:hover {
             text-decoration: underline;
         }
+
         .stats {
-            background: #f0f0f0;
-            padding: 10px 15px;
-            border-radius: 4px;
-            margin-bottom: 20px;
-            color: #666;
+            background: #f8f9fa;
+            padding: 12px 18px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            color: #555;
+            font-size: 14px;
+            border-left: 4px solid #0066cc;
         }
-        .note-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
+
+        .notes-table {
+            width: 100%;
+            border-collapse: collapse;
         }
-        .note-item {
-            padding: 15px;
-            margin: 10px 0;
-            background: #f9f9f9;
-            border-radius: 4px;
-            border-left: 3px solid #28a745;
+
+        .notes-table thead tr {
+            background: #f8f9fa;
+            border-bottom: 2px solid #e0e0e0;
         }
-        .note-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            flex-wrap: wrap;
-            gap: 10px;
+
+        .notes-table th {
+            padding: 16px 20px;
+            text-align: left;
+            font-weight: 600;
+            color: #444;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
-        .note-title a {
-            font-size: 18px;
-            color: #007bff;
+
+        .notes-table tbody tr {
+            border-bottom: 1px solid #eee;
+            transition: background 0.15s ease;
+        }
+
+        .notes-table tbody tr:hover {
+            background: #f8fbff;
+        }
+
+        .notes-table td {
+            padding: 20px;
+            vertical-align: top;
+            color: #333;
+        }
+
+        /* Title Column */
+        .col-title {
+            width: 22%;
+        }
+        .note-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #0066cc;
             text-decoration: none;
-            font-weight: bold;
+            display: block;
+            margin-bottom: 4px;
+            word-break: break-word;
         }
-        .note-title a:hover {
+        .note-title:hover {
+            color: #0052a3;
             text-decoration: underline;
         }
-        .note-meta {
-            font-size: 12px;
-            color: #999;
+
+        /* Preview Column */
+        .col-preview {
+            width: 48%;
         }
         .note-preview {
-            margin-top: 10px;
-            color: #666;
             font-size: 14px;
+            color: #666;
+            line-height: 1.6;
             word-break: break-word;
-            line-height: 1.5;
-            white-space: pre-wrap;
         }
+        .empty-preview {
+            color: #aaa;
+            font-style: italic;
+        }
+
+        /* Size Column */
+        .col-size {
+            width: 12%;
+        }
+        .note-size {
+            font-size: 14px;
+            color: #555;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        /* Date Column */
+        .col-date {
+            width: 18%;
+        }
+        .note-date {
+            font-size: 14px;
+            color: #777;
+        }
+        .note-time {
+            font-size: 12px;
+            color: #aaa;
+            margin-top: 4px;
+        }
+
+        /* Empty State */
         .no-notes {
             text-align: center;
-            color: #666;
-            font-style: italic;
-            padding: 40px;
+            padding: 60px 20px;
+            color: #888;
         }
-        .empty-note {
-            color: #999;
-            font-style: italic;
+        .no-notes p {
+            margin: 10px 0;
+        }
+        .no-notes a {
+            color: #0066cc;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .list-container {
+                margin: 15px;
+                padding: 20px;
+            }
+            .notes-table th,
+            .notes-table td {
+                padding: 15px 12px;
+            }
+            .col-preview {
+                display: none;
+            }
+            .col-title { width: 50%; }
+            .col-size { width: 20%; }
+            .col-date { width: 30%; }
         }
     </style>
 </head>
@@ -151,31 +249,43 @@ $total_notes = count($notes);
                 <p><a href="<?php print $base_url; ?>/">Create your first note →</a></p>
             </div>
         <?php else: ?>
-            <ul class="note-list">
-                <?php foreach ($notes as $note): ?>
-                    <li class="note-item">
-                        <div class="note-header">
-                            <div class="note-title">
-                                <a href="<?php print $base_url . '/' . htmlspecialchars($note['name'], ENT_QUOTES, 'UTF-8'); ?>">
+            <table class="notes-table">
+                <thead>
+                    <tr>
+                        <th class="col-title">Title</th>
+                        <th class="col-preview">Preview</th>
+                        <th class="col-size">Size</th>
+                        <th class="col-date">Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($notes as $note): ?>
+                        <tr>
+                            <td class="col-title">
+                                <a href="<?php print $base_url . '/' . htmlspecialchars($note['name'], ENT_QUOTES, 'UTF-8'); ?>" class="note-title">
                                     <?php print htmlspecialchars($note['name'], ENT_QUOTES, 'UTF-8'); ?>
                                 </a>
-                            </div>
-                            <div class="note-meta">
-                                <?php print date('Y-m-d H:i:s', $note['modified']); ?> · 
-                                <?php print number_format($note['size']); ?> bytes
-                            </div>
-                        </div>
-                        <div class="note-preview">
-                            <?php if ($note['size'] > 0): ?>
-                                <?php print htmlspecialchars($note['preview'], ENT_QUOTES, 'UTF-8'); ?>
-                                <?php if ($note['size'] > 200): ?>...<?php endif; ?>
-                            <?php else: ?>
-                                <span class="empty-note">(empty)</span>
-                            <?php endif; ?>
-                        </div>
-                    </li>
-                <?php endforeach; ?>
-            </ul>
+                            </td>
+                            <td class="col-preview">
+                                <?php if ($note['size'] > 0): ?>
+                                    <div class="note-preview">
+                                        <?php print htmlspecialchars($note['preview'], ENT_QUOTES, 'UTF-8'); ?><?php if ($note['size'] > 200): ?>...<?php endif; ?>
+                                    </div>
+                                <?php else: ?>
+                                    <span class="empty-preview">(empty)</span>
+                                <?php endif; ?>
+                            </td>
+                            <td class="col-size">
+                                <span class="note-size"><?php print number_format($note['size']); ?> B</span>
+                            </td>
+                            <td class="col-date">
+                                <div class="note-date"><?php print date('Y-m-d', $note['modified']); ?></div>
+                                <div class="note-time"><?php print date('H:i:s', $note['modified']); ?></div>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
         <?php endif; ?>
     </div>
 </body>
