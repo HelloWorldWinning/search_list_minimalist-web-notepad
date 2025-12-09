@@ -1,0 +1,11 @@
+services:
+  minimalist-web-notepad:
+    build: .
+    ports:
+      - "3090:80"
+    volumes:
+      - /data/Minimalist_Web_Notepad:/var/www/html/_tmp
+    environment:
+      - MWN_BASE_URL=
+      - MWN_SAVE_PATH=/var/www/html/_tmp
+    restart: unless-stopped
