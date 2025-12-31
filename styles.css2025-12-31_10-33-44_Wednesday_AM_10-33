@@ -49,24 +49,3 @@ body {
         word-break: break-word;
     }
 }
-
-
-
-
-/* Custom font styling */
-@font-face {
-    font-family: 'WebSFPro';
-    src: url('https://raw.githubusercontent.com/HelloWorldWinning/vps/main/folder_font_test/SF_Pro/SF-Pro.ttf') format('truetype');
-    font-display: swap;
-}
-
-body * {
-    font-family: -apple-system, BlinkMacSystemFont, "WebSFPro", sans-serif !important;
-    font-weight: 300 ;
-    text-align: justify !important;
-    line-height: 140% !important;
-}
-
-
-
-
