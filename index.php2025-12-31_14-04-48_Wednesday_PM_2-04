@@ -28,9 +28,8 @@ if (!isset($_GET['note']) || !preg_match('/^[a-zA-Z0-9_-]+$/', $_GET['note']) ||
 
     // Generate a name with 6 random unambiguous characters.
     // Check for collision and regenerate if needed.
-    //    $random_name = substr(str_shuffle('abcdefghjkmnpqrstwxyz'), -6);
     do {
-	$random_name = substr(str_shuffle('234579abcdefghjkmnpqrstwxyz'), -4);
+        $random_name = substr(str_shuffle('abcdefghjkmnpqrstwxyz'), -6);
         $path_check = $save_path . '/' . $random_name;
     } while (is_file($path_check));
 
