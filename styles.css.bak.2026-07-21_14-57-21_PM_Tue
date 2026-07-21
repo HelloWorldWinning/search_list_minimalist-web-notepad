@@ -1,15 +1,11 @@
 /*! Minimalist Web Notepad | https://github.com/pereorga/minimalist-web-notepad */
 
-html, body {
-    height: 100%;
-}
 body {
     margin: 0;
-    overscroll-behavior: none;
     background: #ebeef1;
 }
 .container {
-    position: fixed;
+    position: absolute;
     top: 1px;
     right: 1px;
     bottom: 1px;
@@ -18,7 +14,6 @@ body {
 #content {
     font-size: 100%;
     margin: 0;
-    overscroll-behavior: none;
     padding-top: 5px;
     padding-bottom: 5px;
     padding-left: 10px;
@@ -31,17 +26,13 @@ body {
     box-sizing: border-box;
     border: none;
     outline: none;
-    overscroll-behavior: none;
 }
 #printable {
     display: none;
 }
 
 @media (prefers-color-scheme: dark) {
-    html, body {
-    height: 100%;
-}
-body {
+    body {
         background: #383934;
     }
     #content {
