@@ -19,14 +19,14 @@ foreach ($files as $file) {
     if (is_dir($file) || basename($file) === '.htaccess') {
         continue;
     }
-    
+
     $note_name = basename($file);
     $note_content = file_get_contents($file);
     $modified_time = filemtime($file);
-    
+
     $notes[] = [
         'name' => $note_name,
-        'preview' => mb_substr($note_content, 0, 200),
+        'preview' => mb_substr($note_content, 0, 200, 'UTF-8'),
         'size' => strlen($note_content),
         'modified' => $modified_time
     ];
@@ -38,6 +38,22 @@ usort($notes, function($a, $b) {
 });
 
 $total_notes = count($notes);
+
+// Human-friendly file size: 512 B, 9.8 KB, 1.4 MB, 2.1 GB
+function human_size($bytes) {
+    $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    $i = 0;
+    $size = (float)$bytes;
+    while ($size >= 1024 && $i < count($units) - 1) {
+        $size /= 1024;
+        $i++;
+    }
+    if ($i === 0) {
+        return $bytes . ' B';
+    }
+    // 1 decimal below 10 (e.g. 9.8 KB), no decimals from 10 up (e.g. 120 KB)
+    return ($size < 10 ? number_format($size, 1) : number_format($size, 0)) . ' ' . $units[$i];
+}
 ?><!DOCTYPE html>
 <html lang="en">
 <head>
@@ -90,6 +106,9 @@ $total_notes = count($notes);
             font-size: 15px;
             font-weight: 500;
         }
+        .header-links a:first-child {
+            margin-left: 0;
+        }
 
         .header-links a:hover {
             text-decoration: underline;
@@ -140,6 +159,39 @@ $total_notes = count($notes);
             color: #333;
         }
 
+        /* Column order (left -> right): Title | Preview | Size | Date
+           Importance (used only for hiding order when zooming in):
+           Preview > Title > Date > Size
+           Preview has no fixed width: it takes all remaining space. */
+
+        /* Preview Column (most important, never hidden).
+           The whole cell is clickable: the link's ::after covers the entire td. */
+        .col-preview {
+            position: relative;
+        }
+        .note-preview {
+            display: block;
+            font-size: 14px;
+            color: #666;
+            line-height: 1.6;
+            word-break: break-word;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .note-preview::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+        }
+        .col-preview:hover .note-preview {
+            color: #0052a3;
+            text-decoration: underline;
+        }
+        .empty-preview {
+            color: #aaa;
+            font-style: italic;
+        }
+
         /* Title Column */
         .col-title {
             width: 22%;
@@ -150,7 +202,6 @@ $total_notes = count($notes);
             color: #0066cc;
             text-decoration: none;
             display: block;
-            margin-bottom: 4px;
             word-break: break-word;
         }
         .note-title:hover {
@@ -158,35 +209,10 @@ $total_notes = count($notes);
             text-decoration: underline;
         }
 
-        /* Preview Column */
-        .col-preview {
-            width: 48%;
-        }
-        .note-preview {
-            font-size: 14px;
-            color: #666;
-            line-height: 1.6;
-            word-break: break-word;
-        }
-        .empty-preview {
-            color: #aaa;
-            font-style: italic;
-        }
-
-        /* Size Column */
-        .col-size {
-            width: 12%;
-        }
-        .note-size {
-            font-size: 14px;
-            color: #555;
-            font-weight: 500;
-            white-space: nowrap;
-        }
-
         /* Date Column */
         .col-date {
-            width: 18%;
+            width: 120px;
+            white-space: nowrap;
         }
         .note-date {
             font-size: 14px;
@@ -196,6 +222,17 @@ $total_notes = count($notes);
             font-size: 12px;
             color: #aaa;
             margin-top: 4px;
+        }
+
+        /* Size Column (least important) */
+        .col-size {
+            width: 100px;
+            white-space: nowrap;
+        }
+        .note-size {
+            font-size: 14px;
+            color: #555;
+            font-weight: 500;
         }
 
         /* Empty State */
@@ -211,22 +248,40 @@ $total_notes = count($notes);
             color: #0066cc;
         }
 
-        /* Responsive */
-        @media (max-width: 768px) {
-            .list-container {
-                margin: 15px;
-                padding: 20px;
+        /* Responsive: zooming in shrinks the viewport width in CSS pixels,
+           so columns are hidden in reverse order of importance:
+           Size first -> Date -> Title. Preview is never hidden. */
+
+        /* Step 1: hide Size */
+        @media (max-width: 900px) {
+            .col-size {
+                display: none;
             }
             .notes-table th,
             .notes-table td {
                 padding: 15px 12px;
             }
-            .col-preview {
+        }
+
+        /* Step 2: hide Date */
+        @media (max-width: 700px) {
+            .col-date {
                 display: none;
             }
-            .col-title { width: 50%; }
-            .col-size { width: 20%; }
-            .col-date { width: 30%; }
+            .col-title {
+                width: 30%;
+            }
+        }
+
+        /* Step 3: hide Title (Preview remains as the only column, and is a link) */
+        @media (max-width: 500px) {
+            .col-title {
+                display: none;
+            }
+            .list-container {
+                margin: 5px;
+                padding: 10px;
+            }
         }
     </style>
 </head>
@@ -260,24 +315,25 @@ $total_notes = count($notes);
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($notes as $note): ?>
+                    <?php foreach ($notes as $note):
+                        $safe_name = htmlspecialchars($note['name'], ENT_QUOTES, 'UTF-8');
+                        $note_url = $base_url . '/' . $safe_name;
+                    ?>
                         <tr>
                             <td class="col-title">
-                                <a href="<?php print $base_url . '/' . htmlspecialchars($note['name'], ENT_QUOTES, 'UTF-8'); ?>" class="note-title">
-                                    <?php print htmlspecialchars($note['name'], ENT_QUOTES, 'UTF-8'); ?>
-                                </a>
+                                <a href="<?php print $note_url; ?>" class="note-title"><?php print $safe_name; ?></a>
                             </td>
                             <td class="col-preview">
                                 <?php if ($note['size'] > 0): ?>
-                                    <div class="note-preview">
+                                    <a href="<?php print $note_url; ?>" class="note-preview" title="<?php print $safe_name; ?>">
                                         <?php print htmlspecialchars($note['preview'], ENT_QUOTES, 'UTF-8'); ?><?php if ($note['size'] > 200): ?>...<?php endif; ?>
-                                    </div>
+                                    </a>
                                 <?php else: ?>
-                                    <span class="empty-preview">(empty)</span>
+                                    <a href="<?php print $note_url; ?>" class="note-preview empty-preview" title="<?php print $safe_name; ?>">(empty) <?php print $safe_name; ?></a>
                                 <?php endif; ?>
                             </td>
                             <td class="col-size">
-                                <span class="note-size"><?php print number_format($note['size']); ?> B</span>
+                                <span class="note-size" title="<?php print number_format($note['size']); ?> bytes"><?php print human_size($note['size']); ?></span>
                             </td>
                             <td class="col-date">
                                 <div class="note-date"><?php print date('Y-m-d', $note['modified']); ?></div>
