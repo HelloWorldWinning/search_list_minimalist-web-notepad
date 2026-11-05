@@ -9,6 +9,7 @@ RUN a2enmod rewrite
 # Import App
 #COPY .htaccess index.php styles.css script.js favicon.ico notes.htaccess search.php ./
 COPY .htaccess index.php styles.css script.js favicon.ico notes.htaccess search.php list.php ./
+COPY .Longman_Communication_3000.txt /var/www/html/.Longman_Communication_3000.txt
 # Set entrypoint for permissions
 COPY minimalist-web-notepad-entrypoint /usr/local/bin/
 ENTRYPOINT ["minimalist-web-notepad-entrypoint"]

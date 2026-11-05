@@ -26,18 +26,60 @@ header('Expires: 0');
 // If no name is provided or it contains invalid characters or it is too long.
 if (!isset($_GET['note']) || !preg_match('/^[a-zA-Z0-9_-]+$/', $_GET['note']) || strlen($_GET['note']) > 64) {
 
-    // Generate a name with 6 random unambiguous characters.
-    // Check for collision and regenerate if needed.
-    //    $random_name = substr(str_shuffle('abcdefghjkmnpqrstwxyz'), -6);
-    do {
-	$random_name = substr(str_shuffle('234579abcdefghjkmnpqrstwxyz'), -4);
-        $path_check = $save_path . '/' . $random_name;
-    } while (is_file($path_check));
+	// Load the word list.
+$words = @file(
+    __DIR__ . '/.Longman_Communication_3000.txt',
+    FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES
+);
 
-    // Redirect to the unique name.
-    header("Location: $base_url/" . $random_name);
+if ($words === false) {
+    http_response_code(500);
+    exit('Cannot read Longman_Communication_3000.txt');
+}
 
-    die;
+// Keep unique, lowercase, alphabetic words.
+$words = array_map('trim', $words);
+$words = array_map('strtolower', $words);
+$words = array_values(array_unique(
+    preg_grep('/^[a-z]+$/D', $words)
+));
+
+if (!$words) {
+    http_response_code(500);
+    exit('The word list contains no usable words.');
+}
+
+// Try words in random order, avoiding existing note names.
+shuffle($words);
+$today = date('Y-m-d');
+
+foreach ($words as $word) {
+    $random_name = $today . '-' . $word;
+    $path_check = $save_path . '/' . $random_name;
+
+    if (!file_exists($path_check)) {
+        header("Location: $base_url/" . $random_name);
+        die;
+    }
+}
+
+// Every usable word already has a note for today.
+http_response_code(503);
+exit('No unused note names are available for today.');
+
+
+//    // Generate a name with 6 random unambiguous characters.
+//    // Check for collision and regenerate if needed.
+//    //    $random_name = substr(str_shuffle('abcdefghjkmnpqrstwxyz'), -6);
+//    do {
+//	$random_name = substr(str_shuffle('234579abcdefghjkmnpqrstwxyz'), -4);
+//        $path_check = $save_path . '/' . $random_name;
+//    } while (is_file($path_check));
+//
+//    // Redirect to the unique name.
+//    header("Location: $base_url/" . $random_name);
+//
+//    die;
 }
 
 
