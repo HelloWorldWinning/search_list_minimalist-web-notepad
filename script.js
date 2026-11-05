@@ -1,46 +1,102 @@
-/*! Minimalist Web Notepad | https://github.com/pereorga/minimalist-web-notepad */
+/*! Minimalist Web Notepad | https://github.com/pereorga/minimalist-web-notepad
+ *  Optimized save loop: event-driven, debounced, raw (gzip for big notes),
+ *  only marks "saved" on HTTP 2xx, warns before closing with unsaved changes.
+ */
+(function () {
+    'use strict';
 
-function uploadContent() {
+    var IDLE_MS    = 600;        // save this long after the last keystroke / paste
+    var RETRY_MIN  = 2000;       // first retry delay after a failed save
+    var RETRY_MAX  = 30000;      // retry delay cap
+    var GZIP_MIN   = 32 * 1024;  // gzip bodies at or above this many characters
 
-    // If textarea value changes.
-    if (content !== textarea.value) {
-        var temp = textarea.value;
-        var request = new XMLHttpRequest();
+    var textarea  = document.getElementById('content');
+    var printable = document.getElementById('printable');
+    var baseTitle = document.title;
+    var canGzip   = typeof CompressionStream === 'function';
 
-        request.open('POST', window.location.href, true);
-        request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
-        request.onload = function() {
-            if (request.readyState === 4) {
+    var dirty = false;   // textarea changed since the last successful save started
+    var saving = false;  // a request is in flight
+    var timer = null;
+    var retryDelay = RETRY_MIN;
 
-                // Request has ended, check again after 1 second.
-                content = temp;
-                setTimeout(uploadContent, 1000);
+    // Title prefix shows state:  "• note" = unsaved,  "⚠ note" = save failing.
+    function setState(prefix) {
+        document.title = prefix ? prefix + ' ' + baseTitle : baseTitle;
+    }
+
+    function schedule(ms) {
+        clearTimeout(timer);
+        timer = setTimeout(save, ms);
+    }
+
+    // Only the 'input' event marks the note dirty: no full-string comparison
+    // of a huge textarea every second.
+    textarea.addEventListener('input', function () {
+        dirty = true;
+        setState('•');
+        if (!saving) schedule(IDLE_MS);
+    });
+
+    function buildBody(text) {
+        if (canGzip && text.length >= GZIP_MIN) {
+            var gz = new Blob([text]).stream().pipeThrough(new CompressionStream('gzip'));
+            return new Response(gz).blob().then(function (blob) {
+                return { body: blob, gzip: true };
+            });
+        }
+        return Promise.resolve({ body: text, gzip: false });
+    }
+
+    function save() {
+        if (!dirty || saving) return;
+        saving = true;
+        dirty = false;
+        var text = textarea.value;
+
+        buildBody(text).then(function (b) {
+            var headers = { 'Content-Type': 'text/plain; charset=UTF-8' };
+            if (b.gzip) headers['X-Content-Gzip'] = '1';
+            return fetch(window.location.href, {
+                method: 'POST',
+                headers: headers,
+                body: b.body,
+                cache: 'no-store'
+            });
+        }).then(function (res) {
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            saving = false;
+            retryDelay = RETRY_MIN;
+            if (dirty) {
+                schedule(IDLE_MS);   // user typed during the request
+            } else {
+                setState('');
             }
-        }
-        request.onerror = function() {
-
-            // Try again after 1 second.
-            setTimeout(uploadContent, 1000);
-        }
-        request.send('text=' + encodeURIComponent(temp));
-
-        // Make the content available to print.
-        printable.removeChild(printable.firstChild);
-        printable.appendChild(document.createTextNode(temp));
+        }).catch(function () {
+            saving = false;
+            dirty = true;            // keep the change; try again later
+            setState('⚠');
+            schedule(retryDelay);
+            retryDelay = Math.min(retryDelay * 2, RETRY_MAX);
+        });
     }
-    else {
 
-        // Content has not changed, check again after 1 second.
-        setTimeout(uploadContent, 1000);
-    }
-}
+    // Warn before leaving with unsaved changes.
+    window.addEventListener('beforeunload', function (e) {
+        if (dirty || saving) {
+            e.preventDefault();
+            e.returnValue = '';
+        }
+    });
 
-var textarea = document.getElementById('content');
-var printable = document.getElementById('printable');
-var content = textarea.value;
+    // Fill the print copy only when printing, instead of keeping a second
+    // full copy of the note in the DOM at all times.
+    window.addEventListener('beforeprint', function () {
+        printable.textContent = textarea.value;
+    });
+    window.addEventListener('afterprint', function () {
+        printable.textContent = '';
+    });
 
-// Make the content available to print.
-printable.appendChild(document.createTextNode(content));
-
-textarea.focus();
-uploadContent();
+    textarea.focus({ preventScroll: true });
+})();
