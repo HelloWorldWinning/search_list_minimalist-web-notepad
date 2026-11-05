@@ -1,5 +1,6 @@
 <?php
 
+date_default_timezone_set(getenv('TZ') ?: 'Australia/Perth');
 // Base URL of the website, without trailing slash.
 $base_url = getenv('MWN_BASE_URL') ?: '';
 
